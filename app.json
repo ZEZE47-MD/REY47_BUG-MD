@@ -1,7 +1,7 @@
 {
   "name": "whatsapp-bug-bot",
   "description": "A WhatsApp bot that allows users to report bugs, which are automatically submitted as GitHub issues.",
-  "repository": "https://github.com/yourusername/your-repo",
+  "repository": "https://github.com/ZEZE47-MD/REY47_BUG-MD",
   "keywords": [
     "nodejs",
     "whatsapp",
