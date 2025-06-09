@@ -2,8 +2,8 @@
 
 module.exports = {
   // Bot identity
-  botName: "BugBot",
-  ownerName: "Your Name",
+  botName: "REY47_BUG",
+  ownerName: "REY47",
 
   // WhatsApp owner/admin number(s)
   // Format: with country code, no symbols, just numbers
@@ -14,7 +14,7 @@ module.exports = {
 
   // GitHub integration
   github: {
-    repo: "your-username/your-repo-name",
+    repo: "https://github.com/ZEZE47-MD/REY47_BUG-MD",
     token: process.env.GITHUB_TOKEN || "", // Use .env for safety
   },
 
