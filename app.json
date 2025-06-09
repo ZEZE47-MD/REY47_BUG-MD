@@ -1,1 +1,34 @@
-
+{
+  "name": "whatsapp-bug-bot",
+  "description": "A WhatsApp bot that allows users to report bugs, which are automatically submitted as GitHub issues.",
+  "repository": "https://github.com/yourusername/your-repo",
+  "keywords": [
+    "nodejs",
+    "whatsapp",
+    "github",
+    "bot",
+    "bug-reporter"
+  ],
+  "env": {
+    "GITHUB_TOKEN": {
+      "description": "GitHub Personal Access Token with 'repo' scope",
+      "required": true
+    },
+    "REPO_OWNER": {
+      "description": "GitHub username or organization",
+      "required": true
+    },
+    "REPO_NAME": {
+      "description": "Repository where issues will be created",
+      "required": true
+    }
+  },
+  "scripts": {
+    "start": "node index.js"
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ]
+}
