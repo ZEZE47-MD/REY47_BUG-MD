@@ -1,64 +1,70 @@
-// index.js
-const { Boom } = require('@hapi/boom');
-const makeWASocket = require('@whiskeysockets/baileys').default;
-const { useSingleFileAuthState } = require('@whiskeysockets/baileys');
-const axios = require('axios');
-const fs = require('fs');
+client.on('message', async (message) => {
+    const msg = message.body.trim();
 
-const { state, saveState } = useSingleFileAuthState('./auth_info.json');
+    if (msg.toLowerCase().startsWith('bug ')) {
+        const bugContent = msg.slice(4).trim();
 
-async function startBot() {
-  const sock = makeWASocket({
-    auth: state,
-    printQRInTerminal: true,
-  });
+        if (!bugContent) {
+            await message.reply('⚠️ Tafadhali andika maelezo ya bug baada ya neno "bug".');
+            return;
+        }
 
-  sock.ev.on('creds.update', saveState);
+        // Accepted labels
+        const allowedLabels = ['android', 'ios', 'web', 'desktop'];
+        const labelMatch = bugContent.match(/([^]+)/i);
 
-  sock.ev.on('messages.upsert', async ({ messages }) => {
-    const msg = messages[0];
-    if (!msg.message || msg.key.fromMe) return;
+        let platformLabel = 'general'; // default
+        let cleanDescription = bugContent;
 
-    const sender = msg.key.remoteJid;
-    const text = msg.message.conversation || msg.message.extendedTextMessage?.text;
+        if (labelMatch) {
+            platformLabel = labelMatch[1].toLowerCase().trim();
+            cleanDescription = bugContent.replace(labelMatch[0], '').trim();
 
-    if (text?.toLowerCase().startsWith('bug:')) {
-      const bugDescription = text.slice(4).trim();
-      await sendGitHubIssue(bugDescription, sender);
+            if (!allowedLabels.includes(platformLabel)) {
+                await message.reply(
+                    `⚠️ Platform *"${platformLabel}"* haikubaliki.\n\nTafadhali tumia moja ya hizi: ${allowedLabels
+                        .map((p) => `*${p}*`)
+                        .join(', ')}\n\nMfano:\nbug [android] App haifunguki kwenye Android 12.`
+                );
+                return;
+            }
+        }
 
-      await sock.sendMessage(sender, {
-        text: '✅ Bug reported successfully to GitHub!',
-      });
+        const time = new Date().toLocaleString();
+        const issueTitle = `Bug from ${message.from}`;
+        const issueBody = `**Description:**\n${cleanDescription}\n\n**From:** ${message.from}\n**Time:** ${time}`;
+
+        // Backup locally
+        fs.appendFileSync('bug_reports.txt', `${issueTitle}\n${issueBody}\nPlatform: ${platformLabel}\n\n---\n`);
+
+        try {
+            const response = await axios.post(
+                `https://api.github.com/repos/${process.env.GITHUB_REPO}/issues`,
+                {
+                    title: issueTitle,
+                    body: issueBody,
+                    labels: ['bug', platformLabel]
+                },
+                {
+                    headers: {
+                        Authorization: `token ${process.env.GITHUB_TOKEN}`,
+                        Accept: 'application/vnd.github.v3+json'
+                    }
+                }
+            );
+
+            await message.reply(`✅ Bug yako imewasilishwa kwenye GitHub chini ya label *${platformLabel}*. Asante!`);
+            console.log(`🪲 Bug submitted: ${response.data.html_url}`);
+        } catch (error) {
+            console.error('❌ Error sending to GitHub:', error.response?.data || error.message);
+            await message.reply('❌ Imeshindikana kutuma bug kwenye GitHub. Tafadhali jaribu tena.');
+        }
     }
-  });
-}
 
-async function sendGitHubIssue(description, sender) {
-  const GITHUB_TOKEN = 'your_github_token_here';
-  const REPO_OWNER = 'your_username';
-  const REPO_NAME = 'your_repo';
-
-  const issueData = {
-    title: `Bug report from ${sender}`,
-    body: description,
-    labels: ['bug', 'whatsapp-bot'],
-  };
-
-  try {
-    const res = await axios.post(
-      `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/issues`,
-      issueData,
-      {
-        headers: {
-          Authorization: `token ${GITHUB_TOKEN}`,
-          Accept: 'application/vnd.github.v3+json',
-        },
-      }
-    );
-    console.log('✅ Issue created:', res.data.html_url);
-  } catch (err) {
-    console.error('❌ Failed to create GitHub issue:', err.message);
-  }
-}
-
-startBot();
+    // Help command
+    if (msg.toLowerCase() === 'help' || msg.toLowerCase() === 'bug') {
+        await message.reply(
+            `📌 Tuma bug kwa format:\n\n*bug [platform]* maelezo ya tatizo\n\n✅ Platforms zinazokubalika:\n*android*, *ios*, *web*, *desktop*\n\nMfano:\nbug [web] Login button haifanyi kazi`
+        );
+    }
+});
